@@ -1,0 +1,8 @@
+#!/bin/bash
+set -euo pipefail
+export DISPLAY=:1 XAUTHORITY="$HOME/.Xauthority"
+export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+export XDG_SESSION_TYPE=x11 XDG_CURRENT_DESKTOP=XFCE
+xdpyinfo >/dev/null
+exec "$@"

@@ -1,0 +1,26 @@
+#!/bin/bash
+set -euo pipefail
+export DISPLAY=:1 XAUTHORITY="$HOME/.Xauthority"
+export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+export XDG_SESSION_TYPE=x11 XDG_CURRENT_DESKTOP=XFCE
+umask 077
+touch "$XAUTHORITY"
+xauth -f "$XAUTHORITY" add "$DISPLAY" MIT-MAGIC-COOKIE-1 "$(openssl rand -hex 16)"
+Xtigervnc :1 -geometry 1920x1080 -depth 24 -localhost yes -rfbport 5901 \
+  -SecurityTypes None -auth "$XAUTHORITY" -nolisten tcp &
+xpid=$!
+trap 'kill "$xpid" "${desktop_pid:-}" 2>/dev/null || true; wait || true' EXIT
+ready=false
+for _ in {1..100}; do
+  if xdpyinfo >/dev/null 2>&1; then ready=true; break; fi
+  kill -0 "$xpid"
+  sleep .1
+done
+$ready || exit 1
+systemctl --user import-environment DISPLAY XAUTHORITY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP
+dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP
+xfce4-session &
+desktop_pid=$!
+wait -n "$xpid" "$desktop_pid"
+exit 1

@@ -1,0 +1,21 @@
+/cache/
+/state/
+*.hash
+*.qcow2
+*.img
+*.iso
+*.part
+__pycache__/
+
+/credentials/
+# Private keys and generated cloud-init data, even outside the usual directories.
+id_ed25519
+id_rsa
+id_ecdsa
+id_dsa
+*.pem
+*.key
+user-data
+meta-data
+.env
+.env.*

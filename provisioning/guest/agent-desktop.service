@@ -1,0 +1,15 @@
+[Unit]
+Description=Persistent TigerVNC and XFCE desktop on :1
+After=dbus.socket
+Requires=dbus.socket
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/agent-desktop
+Restart=always
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=15
+
+[Install]
+WantedBy=default.target

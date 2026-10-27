@@ -1,0 +1,48 @@
+#cloud-config
+# render.py injects per-VM user, SSH public key and password hash.
+timezone: Asia/Taipei
+ssh_pwauth: false
+disable_root: true
+growpart:
+  mode: auto
+  devices: ['/']
+resize_rootfs: true
+package_update: true
+package_upgrade: false
+packages:
+  - qemu-guest-agent
+  - openssh-server
+  - sudo
+  - git
+  - curl
+  - ca-certificates
+  - python3
+  - python3-venv
+  - python3-pip
+  - build-essential
+  - xfce4
+  - xfce4-terminal
+  - tigervnc-standalone-server
+  - dbus-user-session
+  - dbus-x11
+  - xauth
+  - openssl
+  - xfonts-base
+  - xdotool
+  - wmctrl
+  - xclip
+  - scrot
+  - x11-utils
+  - x11-xserver-utils
+  - snapd
+write_files:
+  - path: /etc/ssh/sshd_config.d/00-agent-auth.conf
+    permissions: '0644'
+    content: |
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      AuthenticationMethods publickey
+      PubkeyAuthentication yes
+runcmd:
+  - [systemctl, enable, --now, qemu-guest-agent]
+  - [systemctl, restart, ssh]

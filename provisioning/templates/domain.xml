@@ -1,0 +1,34 @@
+<domain type="kvm">
+  <name>__NAME__</name>
+  <memory unit="MiB">16384</memory>
+  <currentMemory unit="MiB">16384</currentMemory>
+  <vcpu placement="static">8</vcpu>
+  <os firmware="efi">
+    <type arch="x86_64" machine="q35">hvm</type>
+    <firmware><feature enabled="no" name="secure-boot"/></firmware>
+    <boot dev="hd"/>
+  </os>
+  <features><acpi/><apic/></features>
+  <cpu mode="host-passthrough" check="none"/>
+  <clock offset="utc"/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <devices>
+    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+    <disk type="file" device="disk">
+      <driver name="qemu" type="qcow2" discard="unmap"/>
+      <source file="__DISK__"/><target dev="vda" bus="virtio"/>
+    </disk>
+    <disk type="file" device="cdrom">
+      <driver name="qemu" type="raw"/>
+      <source file="__SEED__"/><target dev="sda" bus="sata"/><readonly/>
+    </disk>
+    <interface type="network"><source network="default"/><model type="virtio"/></interface>
+    <channel type="unix"><target type="virtio" name="org.qemu.guest_agent.0"/></channel>
+    <serial type="pty"><target port="0"/></serial>
+    <console type="pty"><target type="serial" port="0"/></console>
+    <rng model="virtio"><backend model="random">/dev/urandom</backend></rng>
+    <memballoon model="virtio"/>
+  </devices>
+</domain>

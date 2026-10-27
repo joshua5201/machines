@@ -1,0 +1,39 @@
+#!/bin/bash
+set -euo pipefail
+sudo -n true
+systemctl is-active qemu-guest-agent
+systemctl --user is-active agent-desktop.service
+loginctl show-user "$USER" -p Linger
+[[ $(nproc) == 8 ]]
+[[ $(lsblk -bdno SIZE /dev/vda) == 128849018880 ]]
+free -m
+findmnt /
+/usr/local/bin/desktop-exec xdpyinfo >/dev/null
+/usr/local/bin/desktop-exec xdotool mousemove 300 200 getmouselocation
+/usr/local/bin/desktop-exec scrot "$HOME/desktop-verification.png"
+pgrep -u "$(id -u)" -x xfce4-session
+pgrep -u "$(id -u)" -x xfwm4
+pgrep -u "$(id -u)" -x xfdesktop
+pgrep -u "$(id -u)" -x xfce4-panel
+python3 - <<'PY'
+import subprocess
+lines = subprocess.check_output(['ss', '-H', '-ltn'], text=True).splitlines()
+addresses = [l.split()[3] for l in lines if l.split()[3].endswith(':5901')]
+assert addresses, 'VNC not listening'
+assert all(a in ('127.0.0.1:5901', '[::1]:5901', '::1:5901') for a in addresses), addresses
+print('VNC loopback listeners:', addresses)
+PY
+curl -fsSI https://archive.ubuntu.com/ubuntu/ >/dev/null
+snap list chromium
+# Run via user systemd so Chromium gets its own cgroup; do not disable its sandbox.
+systemd-run --user --unit=chromium-verification --collect /usr/local/bin/desktop-exec /snap/bin/chromium --no-first-run about:blank
+for _ in {1..30}; do
+  if /usr/local/bin/desktop-exec wmctrl -lx | grep -i chromium; then
+    /usr/local/bin/desktop-exec scrot "$HOME/chromium-verification.png"
+    echo 'Desktop verification passed; screenshots are in your home directory.'
+    exit 0
+  fi
+  sleep 2
+done
+echo 'Chromium window did not appear; inspect journalctl --user -u chromium-verification' >&2
+exit 1
