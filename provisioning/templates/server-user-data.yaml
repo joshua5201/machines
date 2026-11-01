@@ -20,21 +20,9 @@ packages:
   - python3-venv
   - python3-pip
   - build-essential
-  - xfce4
-  - xfce4-terminal
-  - tigervnc-standalone-server
-  - dbus-user-session
-  - dbus-x11
-  - xauth
-  - openssl
-  - xfonts-base
-  - xdotool
-  - wmctrl
-  - xclip
-  - scrot
-  - x11-utils
-  - x11-xserver-utils
-  - snapd
+  - jq
+  - unzip
+  - rsync
 write_files:
   - path: /etc/ssh/sshd_config.d/00-agent-auth.conf
     permissions: '0644'
@@ -46,3 +34,9 @@ write_files:
 runcmd:
   - [systemctl, enable, --now, qemu-guest-agent]
   - [systemctl, restart, ssh]
+  - [systemctl, set-default, multi-user.target]
+  - [systemctl, enable, --now, serial-getty@ttyS0.service]
+  # Install only: enroll interactively after cloud-init, never embed auth keys.
+  - [curl, -fsSL, --retry, '3', --connect-timeout, '20', --max-time, '180', https://tailscale.com/install.sh, -o, /run/install-tailscale.sh]
+  - [sh, /run/install-tailscale.sh]
+  - [systemctl, enable, --now, tailscaled]

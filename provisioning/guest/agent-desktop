@@ -7,8 +7,15 @@ export XDG_SESSION_TYPE=x11 XDG_CURRENT_DESKTOP=XFCE
 umask 077
 touch "$XAUTHORITY"
 xauth -f "$XAUTHORITY" add "$DISPLAY" MIT-MAGIC-COOKIE-1 "$(openssl rand -hex 16)"
+vnc_auth=(-SecurityTypes None)
+if [[ -e "$HOME/.config/tigervnc/passwd" ]]; then
+  [[ -r "$HOME/.config/tigervnc/passwd" && -s "$HOME/.config/tigervnc/passwd" ]] || {
+    echo 'VNC password file is empty or unreadable.' >&2; exit 1;
+  }
+  vnc_auth=(-SecurityTypes VncAuth -PasswordFile "$HOME/.config/tigervnc/passwd")
+fi
 Xtigervnc :1 -geometry 1920x1080 -depth 24 -localhost yes -rfbport 5901 \
-  -SecurityTypes None -auth "$XAUTHORITY" -nolisten tcp &
+  "${vnc_auth[@]}" -auth "$XAUTHORITY" -nolisten tcp &
 xpid=$!
 trap 'kill "$xpid" "${desktop_pid:-}" 2>/dev/null || true; wait || true' EXIT
 ready=false

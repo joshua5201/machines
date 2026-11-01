@@ -19,3 +19,15 @@ user-data
 meta-data
 .env
 .env.*
+
+# Host public-key inventory is local configuration.
+authorized_keys
+authorized_keys.*
+
+# Local runtime artifacts and editor/OS files.
+*.pub
+*.log
+*.nvram
+tailscaled.state
+.DS_Store
+.venv/
