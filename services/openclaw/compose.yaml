@@ -1,0 +1,33 @@
+name: openclaw
+services:
+  gateway:
+    image: ghcr.io/openclaw/openclaw:2026.10.9
+    user: "${OPENCLAW_UID:?Run through compose.sh}:${OPENCLAW_GID:?Run through compose.sh}"
+    init: true
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:mode=1777
+    environment:
+      HOME: /home/node/.openclaw
+      XDG_CACHE_HOME: /home/node/.openclaw/cache
+      OPENCLAW_HOME: /home/node
+      OPENCLAW_STATE_DIR: /home/node/.openclaw
+      OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
+      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
+      OPENCLAW_DISABLE_BONJOUR: "1"
+    volumes:
+      - type: bind
+        source: /var/lib/openclaw/state
+        target: /home/node/.openclaw
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/lib/openclaw/auth
+        target: /home/node/.config/openclaw
+        bind:
+          create_host_path: false
+    ports:
+      - "127.0.0.1:18789:18789"
+    command: [node, dist/index.js, gateway, --bind, lan, --port, "18789"]

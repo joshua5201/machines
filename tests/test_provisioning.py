@@ -36,7 +36,7 @@ class ProvisioningTest(unittest.TestCase):
                             '--dry-run', *args, check=False)
 
     def test_defaults_and_profiles(self):
-        for args, profile, size in [((), 'server', 20), (('--profile', 'gui'), 'gui', 120),
+        for args, profile, size in [((), 'server', 80), (('--profile', 'gui'), 'gui', 120),
                                     (('--size-gib', '40'), 'server', 40)]:
             result = self.create(*args)
             self.assertEqual(result.returncode, 0, result.stderr)

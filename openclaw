@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Host 上的 Gateway CLI；使用執行中容器的帳號、設定與憑證。
+set -euo pipefail
+repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+exec_options=()
+if [[ ! -t 0 || ! -t 1 ]]; then
+  exec_options+=(-T)
+fi
+exec bash "$repo_dir/services/openclaw/compose.sh" exec "${exec_options[@]}" \
+  gateway node dist/index.js "$@"

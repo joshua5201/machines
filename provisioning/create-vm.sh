@@ -8,7 +8,7 @@ usage() {
   cat <<'HELP'
 Usage: sudo ./provisioning/create-vm.sh HOSTNAME [options]
 
-  --profile server|gui   Default: server (2 CPU / 8 GiB / 20 GiB)
+  --profile server|gui   Default: server (2 CPU / 8 GiB / 80 GiB)
                          gui: 8 CPU / 16 GiB / 120 GiB
   --username USER       Default: agent
   --size-gib N          Override disk size
@@ -58,7 +58,7 @@ done
 [[ $name =~ ^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$ ]] || die 'Provide a lowercase hostname (1-63 characters, no trailing hyphen).'
 [[ $username =~ ^[a-z_][a-z0-9_-]{0,30}$ && $username != root ]] || die 'Invalid non-root username.'
 case $profile in
-  server) size=${size:-20};;
+  server) size=${size:-80};;
   gui) size=${size:-120};;
   *) die 'Profile must be server or gui';;
 esac
