@@ -7,6 +7,8 @@ username=${2:-agent}
 wait_seconds=${3:-120}
 key=${4:-}
 profile=${5:-unknown}
+no_sudo=${6:-false}
+[[ $no_sudo == true || $no_sudo == false ]] || { echo 'Invalid no-sudo flag' >&2; exit 2; }
 [[ $profile == gui || $profile == server || $profile == unknown ]] || { echo "Invalid profile" >&2; exit 2; }
 [[ $name =~ ^[a-z][a-z0-9-]{0,62}$ && $username =~ ^[a-z_][a-z0-9_-]{0,30}$ && $wait_seconds =~ ^[0-9]{1,4}$ ]] || {
   echo "Usage: $0 [VM_NAME] [USERNAME] [WAIT_SECONDS:0-9999] [PRIVATE_KEY] [gui|server]" >&2; exit 2;
@@ -50,7 +52,12 @@ printf 'Login: '; printf '%q ' "${args[@]}" "$username@$ip"; printf '\n'
 if [[ $profile == gui ]]; then
   printf 'VNC tunnel: '; printf '%q ' "${args[@]}" -N -L 5901:127.0.0.1:5901 "$username@$ip"; printf '\n'
 fi
-echo 'In guest: sudo cloud-init status --wait --long'
+if [[ $no_sudo == true ]]; then
+  echo 'In guest: cloud-init status --wait --long'
+  echo 'After successful initialization: tailscale up (no sudo; user is Tailscale operator)'
+else
+  echo 'In guest: sudo cloud-init status --wait --long'
+fi
 if [[ $profile == gui ]]; then
   echo 'After successful initialization: verify-desktop'
 elif [[ $profile == server ]]; then

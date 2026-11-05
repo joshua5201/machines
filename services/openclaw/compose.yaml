@@ -1,7 +1,7 @@
 name: openclaw
 services:
   gateway:
-    image: ghcr.io/openclaw/openclaw:2026.10.9
+    build: .
     user: "${OPENCLAW_UID:?Run through compose.sh}:${OPENCLAW_GID:?Run through compose.sh}"
     init: true
     restart: unless-stopped
@@ -12,6 +12,7 @@ services:
     environment:
       HOME: /home/node/.openclaw
       XDG_CACHE_HOME: /home/node/.openclaw/cache
+      GH_CONFIG_DIR: /home/node/.config/openclaw/gh
       OPENCLAW_HOME: /home/node
       OPENCLAW_STATE_DIR: /home/node/.openclaw
       OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json

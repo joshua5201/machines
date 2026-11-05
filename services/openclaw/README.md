@@ -17,6 +17,32 @@ wrapper 直接呼叫執行中的 Gateway 容器，保留參數、stdin 與 exit 
 容器未啟動時先執行上面的 `compose.sh up -d`。不需 sudo，也不需在 Host 安裝 OpenClaw。
 這個入口管理 Gateway；文件若明確要求在 Node 執行，仍須在 Guest 操作。
 
+## GitHub CLI
+
+Gateway 使用官方 OpenClaw 固定版本為基底，加入官方 `gh 2.103.3` amd64 套件並驗證 SHA256。
+在 **Host repo 根目錄**建置、套用；套用會短暫重啟 Gateway：
+
+```bash
+bash services/openclaw/gateway-update.sh
+```
+
+腳本建置並套用 repo 固定版本，再確認 gh 版本；任一步失敗就停止，不會自動升到 latest。
+首次使用 gh 再登入：
+
+```bash
+bash services/openclaw/compose.sh exec gateway gh auth login --hostname github.com --git-protocol https --web
+bash services/openclaw/compose.sh exec gateway gh auth status
+```
+
+依提示在自己的瀏覽器完成 GitHub 登入；不要分享登入碼或 token。
+`GH_CONFIG_DIR` 指向既有持久掛載的 `/home/node/.config/openclaw/gh`，重建容器仍保留登入。
+容器沒有系統 keyring 時，gh 會將 token 存成檔案，納入服務私有資料備份，勿提交 Git。
+可用 `bash services/openclaw/compose.sh exec gateway gh repo list` 操作。
+安裝方式與登入行為見 [官方 Linux 安裝文件](https://github.com/cli/cli/blob/trunk/docs/install_linux.md)
+及 [gh auth login](https://cli.github.com/manual/gh_auth_login)。
+
+## Gateway 操作
+
 ```bash
 ./openclaw --help
 ./openclaw devices list
@@ -117,10 +143,10 @@ sudo install -d -o openclaw -g openclaw -m 0700 \
   /var/lib/openclaw /var/lib/openclaw/state /var/lib/openclaw/auth
 ```
 
-4. **Host repo 根目錄**：拉取固定版本，以服務 UID 建立初始設定；隨機 token 只寫入私有檔案，不輸出。已有設定時此命令會拒絕覆寫。
+4. **Host repo 根目錄**：建置含 gh 的固定版本映像，以服務 UID 建立初始設定；隨機 token 只寫入私有檔案，不輸出。已有設定時此命令會拒絕覆寫。
 
 ```bash
-bash services/openclaw/compose.sh pull
+bash services/openclaw/compose.sh build --pull gateway
 bash services/openclaw/compose.sh run --rm -T --no-deps --entrypoint node gateway - <<'JS'
 const fs = require('fs'), crypto = require('crypto');
 const config = {

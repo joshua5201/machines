@@ -39,10 +39,26 @@ sudo ./provisioning/create-vm.sh HOSTNAME --profile gui
 - VM 資料固定 `/var/lib/libvirt/images/HOSTNAME/`，注意 QEMU 權限與 AppArmor。既有 domain 或目錄不可覆寫，失敗保留產物供診斷。
 - 不對運作中 VM 做離線磁碟寫入，不自動刪除失敗的 VM／磁碟來重試。
 - 新 VM 複製 Host 呼叫者的 `~/.ssh/authorized_keys`；sudo 下依 `SUDO_UID` 找原使用者。保留 key options，只複製公鑰、不持續同步。
-- SSH 密碼與 keyboard-interactive 關閉；Guest 保留 `NOPASSWD:ALL`。隨機本機密碼只保存 hash，不記錄明文。
+- SSH 密碼與 keyboard-interactive 關閉；Guest 預設保留 `NOPASSWD:ALL`。`--no-sudo` 則不給 sudo、鎖定本機密碼，只給 Guest `kvm`／`plugdev` 裝置群組與 Tailscale operator，啟用 user service linger。隨機本機密碼只保存 hash，不記錄明文。
 - Tailscale 自動安裝並啟動服務，首次 `tailscale up` 由使用者登入；不在 cloud-init 放 auth key，不啟用 Tailscale SSH／subnet router／exit node。
 - VM provisioning 模板仍不預裝 OpenClaw；獨立部署放 `services/openclaw/`。Gateway 使用 Host 既有 Docker，以專用 `openclaw` UID/GID 執行；Node 與桌面瀏覽器放 GUI Guest。整合時查當時官方文件／原始碼，不猜工具路由或配置欄位。
 - OpenClaw Control UI 使用 Host Tailscale Serve 提供 tailnet HTTPS，Docker 僅發布 localhost:18789；保留 token 與裝置配對，不啟用 Funnel。先查 Serve 現況再修改，不覆蓋其他服務。Guest Node 也經 Tailscale 連 Host Serve 的 WSS:443，需 Guest Tailscale 在線；原 SSH tunnel 已停用。Docker bridge 被列為可信代理後，不使用缺少 forwarded headers 的 SSH tunnel 連入。
+
+## OpenClaw 設定與入口
+
+路徑對應以 `services/openclaw/compose.yaml` 為準；這是 repo 部署設定，線上容器仍需唯讀核對。
+
+| 用途 | Host 路徑 | Gateway container 路徑 |
+| --- | --- | --- |
+| 主設定（`OPENCLAW_CONFIG_PATH`） | `/var/lib/openclaw/state/openclaw.json` | `/home/node/.openclaw/openclaw.json` |
+| State（`OPENCLAW_STATE_DIR`、容器 `HOME`） | `/var/lib/openclaw/state` | `/home/node/.openclaw` |
+| 工作區（`OPENCLAW_WORKSPACE_DIR`） | `/var/lib/openclaw/state/workspace` | `/home/node/.openclaw/workspace` |
+| 持久登入目錄 | `/var/lib/openclaw/auth` | `/home/node/.config/openclaw` |
+| GitHub CLI 設定／登入（`GH_CONFIG_DIR`） | `/var/lib/openclaw/auth/gh` | `/home/node/.config/openclaw/gh` |
+
+- Gateway CLI：repo 根目錄 `./openclaw ...`；Compose：`bash services/openclaw/compose.sh ...`，自動帶入專用服務 UID/GID。
+- 映像與 gh 固定版本：`services/openclaw/Dockerfile`；更新：`./services/openclaw/gateway-update.sh`，會建置、短暫重啟 Gateway 並確認 gh 版本。
+- 完整操作步驟：`services/openclaw/README.md`。設定與登入目錄可能含 token，只記路徑，不輸出整份設定或憑證，不提交 Git。
 
 ## GUI 注意事項
 

@@ -11,6 +11,9 @@ Usage: sudo ./provisioning/create-vm.sh HOSTNAME [options]
   --profile server|gui   Default: server (2 CPU / 8 GiB / 80 GiB)
                          gui: 8 CPU / 16 GiB / 120 GiB
   --username USER       Default: agent
+  --cpu N               Override vCPU count (positive integer)
+  --ram N               Override RAM in GiB (positive integer)
+  --no-sudo             Guest user has no sudo; prepare KVM/USB and user services
   --size-gib N          Override disk size
   --ssh-key FILE        Default: invoking Host user's ~/.ssh/authorized_keys
   --password-hash FILE  Default: generate a random password hash; discard plaintext
@@ -34,13 +37,17 @@ hash=''
 xml=''
 userdata=''
 size=''
+cpu=''
+ram=''
 dir=''
 base=$project/cache/resolute-server-cloudimg-amd64.img
 dry_run=false
+no_sudo=false
 while (($#)); do
   case $1 in
     -h|--help) usage; exit 0;;
     --dry-run) dry_run=true; shift; continue;;
+    --no-sudo) no_sudo=true; shift; continue;;
     --*)
       (($# >= 2)) && [[ $2 != --* ]] || die "Missing value for $1"
       case $1 in
@@ -48,6 +55,12 @@ while (($#)); do
         --username) username=$2;; --profile) profile=$2;; --ssh-key) key=$2;;
         --password-hash) hash=$2;; --base-image) base=$2;; --vm-dir) dir=$2;;
         --size-gib) size=$2;; --xml) xml=$2;; --user-data) userdata=$2;;
+        --cpu)
+          [[ $2 =~ ^[1-9][0-9]{0,5}$ ]] || die 'CPU count must be a positive integer.'
+          cpu=$2;;
+        --ram)
+          [[ $2 =~ ^[1-9][0-9]{0,5}$ ]] || die 'RAM must be a positive integer in GiB.'
+          ram=$2;;
         *) die "Unknown option: $1";;
       esac
       shift 2;;
@@ -120,13 +133,18 @@ with open(sys.argv[1],'x') as f:
                    text=True,stdout=f,check=True)
 PY
 fi
+resources=()
+[[ -z $cpu ]] || resources+=(--cpu "$cpu")
+[[ -z $ram ]] || resources+=(--ram "$ram")
+$no_sudo && resources+=(--no-sudo)
 python3 "$root/scripts/render.py" --name "$name" --username "$username" \
   --profile "$profile" --ssh-key "$key" --password-hash "$hash" \
   --user-data "$userdata" --xml "$xml" --disk "$dir/root.qcow2" \
-  --seed "$dir/seed.iso" --output "$work/config"
+  --seed "$dir/seed.iso" --output "$work/config" "${resources[@]}"
 # Validate before creating a VM directory or changing libvirt.
 if command -v virt-xml-validate >/dev/null; then virt-xml-validate "$work/config/domain.xml" domain; fi
 echo "Name: $name | profile: $profile | user: $username | disk: ${size} GiB"
+if $no_sudo; then echo 'Guest sudo: disabled (KVM/USB groups and user services enabled)'; fi
 echo "Public keys: $key"
 echo "Templates: $xml ; $userdata"
 if $dry_run; then
@@ -166,4 +184,4 @@ stage='start domain'
 trap - ERR
 login_key=${key%.pub}
 [[ $login_key != "$key" && -f $login_key ]] || login_key=''
-"$root/vm-status.sh" "$name" "$username" 120 "$login_key" "$profile"
+"$root/vm-status.sh" "$name" "$username" 120 "$login_key" "$profile" "$no_sudo"

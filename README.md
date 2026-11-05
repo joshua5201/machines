@@ -24,14 +24,19 @@ sudo ./provisioning/create-vm.sh desktop-01 --profile gui
 | `gui` | 8 | 16 GiB | 120 GiB | 另加 XFCE、TigerVNC、Chromium |
 
 帳號預設 `agent`，沿用 Host 執行者的 `~/.ssh/authorized_keys`（sudo 下仍是原使用者）。
-SSH 僅公鑰登入、sudo 免密碼；本機密碼 hash 自動產生。VM 自動開機，資料位於 `/var/lib/libvirt/images/VM名稱/`，不覆寫既有 VM。
+SSH 僅公鑰登入、預設 sudo 免密碼；本機密碼 hash 自動產生。VM 自動開機，資料位於 `/var/lib/libvirt/images/VM名稱/`，不覆寫既有 VM。
 
 ```bash
 # 選填設定、檢查、完整參數
 sudo ./provisioning/create-vm.sh dev-02 --size-gib 40 --username developer
+sudo ./provisioning/create-vm.sh android-build-server --profile server --cpu 4 --ram 12 --no-sudo
 ./provisioning/create-vm.sh dev-02 --dry-run
 ./provisioning/create-vm.sh --help
 ```
+
+`--cpu` 覆寫 vCPU 數，`--ram` 覆寫記憶體（GiB），均為正整數；未指定時沿用模板。`--size-gib` 覆寫磁碟大小。這些參數只用於新建 VM。
+
+`--no-sudo` 適用兩種 profile：Guest 帳號不給 sudo、鎖定本機密碼，加入 `kvm`／`plugdev`，預設 USB udev rules 與 KVM 裝置群組權限，啟用 user service linger。初始化會在 Guest 載入可用的 KVM 驅動，不修改 Host nested 設定或自動直通 USB。帳號可操作 Guest Tailscale，首次仍需人工登入。Android SDK、JDK、AVD 與 GitHub runner 不預裝；安裝與驗收見 [無 sudo runner](provisioning/README.md)。
 
 模板在 `provisioning/templates/{server,gui}-{domain.xml,user-data.yaml}`，可用 `--xml`、`--user-data` 覆寫。變更模板不影響既有 VM。
 
@@ -52,6 +57,8 @@ sudo cloud-init status --wait --long &&
 ```
 
 完成網址登入，連線端使用同一個 tailnet、MagicDNS 且允許 SSH 後，可直接 `ssh agent@dev-01`。
+
+使用 `--no-sudo` 的 Guest 改用 `cloud-init status --wait --long`，成功後執行 `tailscale up --hostname="$(hostname -s)"`，均不加 sudo。
 
 ## GUI / Mac VNC
 
