@@ -20,6 +20,8 @@ packages:
   - python3-venv
   - python3-pip
   - build-essential
+  - acl
+  - libx11-xcb1
   - xfce4
   - xfce4-terminal
   - tigervnc-standalone-server
